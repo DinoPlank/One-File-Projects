@@ -2,7 +2,6 @@ import random, sys, webbrowser
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton, QWidget, QLineEdit,QLayout
 from PyQt5.QtCore import Qt, QTimer
 
-
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -135,14 +134,14 @@ class MainWindow(QMainWindow):
                 self.Rfindallowed(row,col)
                 self.Bfindallowed(row,col)
                 if self.currentplayer=='w' and self.castleinfo["Kw"]==False:
-                    if self.castleinfo["Rwl"]==False and self.boardstate[7][1]=="" and self.boardstate[7][2]=="" and self.boardstate[7][3]=="":
+                    if self.castleinfo["Rwl"]==False and self.boardstate[7][1]=="" and self.boardstate[7][2]=="" and self.boardstate[7][3]=="" and ("Rw" in self.boardstate[7][0]):
                         self.allowed.append(72)
-                    if self.castleinfo["Rwr"]==False and self.boardstate[7][6]=="" and self.boardstate[7][5]=="":
+                    if self.castleinfo["Rwr"]==False and self.boardstate[7][6]=="" and self.boardstate[7][5]=="" and ("Rw" in self.boardstate[7][7]):
                         self.allowed.append(76)
                 if self.currentplayer=='b' and self.castleinfo["Kb"]==False:
-                    if self.castleinfo["Rbl"]==False and self.boardstate[0][1]=="" and self.boardstate[0][2]=="" and self.boardstate[0][3]=="":
+                    if self.castleinfo["Rbl"]==False and self.boardstate[0][1]=="" and self.boardstate[0][2]=="" and self.boardstate[0][3]=="" and ("Rb" in self.boardstate[0][0]):
                         self.allowed.append(2)
-                    if self.castleinfo["Rbr"]==False and self.boardstate[0][6]=="" and self.boardstate[0][5]=="":
+                    if self.castleinfo["Rbr"]==False and self.boardstate[0][6]=="" and self.boardstate[0][5]=="" and ("Rb" in self.boardstate[0][7]):
                         self.allowed.append(6)
             elif 'N' in self.boardstate[row][col]:
                 self.Nfindallowed(row,col)
@@ -222,8 +221,9 @@ class MainWindow(QMainWindow):
                     self.boardUI[7][col+1].setText(self.pieceicon(7,col+1))
                     return
 
-        piecepoints = {"Pw":1,"Rw":5,"Nw":3,"Bw":3,"Qw":9,"Pb":1,"Rb":5,"Nb":3,"Bb":3,"Qb":9,}
-        highest=0
+        piecepoints = {"Kb":0,"":0,"Pw":1,"Rw":5,"Nw":3,"Bw":3,"Qw":9,"Pb":1,"Rb":5,"Nb":3,"Bb":3,"Qb":9,}
+        highest=-1 #if -1 then it does trades, if its 0 it doesnt
+        randval=0 #used to make the safe move choice random
         move=(0,0,0,0)
         for row in range(8):
             for col in range(8):
@@ -247,14 +247,19 @@ class MainWindow(QMainWindow):
                     for rowcol in self.allowed:
                         r=rowcol//10
                         c=rowcol%10
-                        if self.boardstate[r][c] not in piecepoints:continue #if the space is empty or a black piece, skip it
+                        if self.boardstate[r][c]=="": 
+                            if self.is_square_safe(r,c) and highest==-1: #safe moves are better than unsafe or random moves
+                                if randval<random.randint(0,10):
+                                    randval=random.randint(0,10)
+                                    move=(row,col,r,c)
+                            continue
                         if self.is_square_safe(r,c): value=piecepoints[self.boardstate[r][c]]
                         else: value=piecepoints[self.boardstate[r][c]]-piecepoints[self.boardstate[row][col]]
+                        if 'Q' not in self.boardstate[row][col] and 'Q' in self.boardstate[r][c] and 100-piecepoints[self.boardstate[row][col]]>highest: #taking queen without queen trade has priority
+                            highest=100-piecepoints[self.boardstate[row][col]]
+                            move=(row,col,r,c)
                         if value>highest: 
                             highest=value
-                            move=(row,col,r,c)
-                        elif value>=(highest-1) and 'Q' in self.boardstate[r][c]: #taking queen without queen trade has priority
-                            highest=100
                             move=(row,col,r,c)
                         
         self.allowed=[]
